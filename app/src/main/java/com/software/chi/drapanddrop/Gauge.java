@@ -4,8 +4,10 @@ package com.software.chi.drapanddrop;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.SweepGradient;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
@@ -46,11 +48,6 @@ public class Gauge extends View implements IProtocol {
 
     public Gauge(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init();
-    }
-
-    public Gauge(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
         init();
     }
 
@@ -126,12 +123,15 @@ public class Gauge extends View implements IProtocol {
         radius -= 60;
         float x_StartLine = (float) (center_x + radius * cos(toRadians(a)));
         float y_StartLine = (float) (center_y + radius * sin(toRadians(a)));
-//        int[] colors = {0xFF7461F1, 0xFFF16973};
-//        float[] positions = {0, 360};
-//        SweepGradient sweepGradient = new SweepGradient(center_x, center_y, colors, positions);
-//        mProgressPanel.setShader(sweepGradient);
-//        mProgressPoint.setShader(sweepGradient);
-//        mBg.setShader(sweepGradient);
+        int[] colors = {0xFF6045EC, 0xFFFF5471};
+        float[] positions = {2, 360};
+        SweepGradient sweepGradient = new SweepGradient(center_x, center_y, colors, positions);
+        Matrix matrix = new Matrix();
+        matrix.setRotate(90, center_x, center_y);
+        sweepGradient.setLocalMatrix(matrix);
+        mProgressPanel.setShader(sweepGradient);
+        mProgressPoint.setShader(sweepGradient);
+        mBg.setShader(sweepGradient);
         canvas.drawArc(oval, 0, 360, false, mBg);
         canvas.drawLine(x_point, y_point, x_StartLine, y_StartLine, mProgressPointBoardLine);
         canvas.drawArc(ovalProgress, 135, 270, false, mProgressPanel);
