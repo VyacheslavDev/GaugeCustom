@@ -19,7 +19,7 @@ import static java.lang.Math.sin;
 import static java.lang.Math.toRadians;
 
 interface IProtocol {
-    void maxValue(int maxValue);
+    void setVolume(int value);
 }
 
 public class Gauge extends View implements IProtocol {
@@ -28,13 +28,16 @@ public class Gauge extends View implements IProtocol {
     private Paint mProgressPoint;
     private Paint mProgressPointBoard;
     private Paint mProgressPointBoardLine;
-    private Context mContext;
 
-    private float mMaxValue;
+    private float mCurrentValue;
 
-    float radius;
-    float center_y;
-    float center_x;
+    private float mRadius, mRadiusOvalProgress, mRadiusBlackLine;
+    private float center_y;
+    private float center_x;
+    private float mCorner;
+
+    private float xPointProgress, yPointProgress;
+    private float xBlackLine, yBlackLine;
 
     private RectF oval = new RectF();
     private RectF ovalProgress = new RectF();
@@ -44,19 +47,16 @@ public class Gauge extends View implements IProtocol {
 
     public Gauge(Context context) {
         super(context);
-        this.mContext = context;
         init();
     }
 
     public Gauge(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        this.mContext = context;
         init();
     }
 
     public Gauge(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        this.mContext = context;
         init();
     }
 
@@ -114,8 +114,9 @@ public class Gauge extends View implements IProtocol {
     }
 
     @Override
-    public void maxValue(int maxValue) {
-        mMaxValue = maxValue;
+    public void setVolume(int value) {
+        mCurrentValue = value;
+        recount();
         postInvalidate();
     }
 
@@ -124,33 +125,11 @@ public class Gauge extends View implements IProtocol {
         if (canvas.getWidth() <= 0) {
             return;
         }
-        radius = center_x - dpToPx(10);
-
-        oval.set(center_x - radius, center_y - radius, center_x + radius, center_y + radius);
-        radius -= dpToPx(10);
-        ovalProgress.set(center_x - radius, center_y - radius, center_x + radius, center_y + radius);
-
-        float a = (float) (2.7 * mMaxValue) + 135;
-        float x_point = (float) (center_x + radius * cos(toRadians(a)));
-        float y_point = (float) (center_y + radius * sin(toRadians(a)));
-
-        radius -= dpToPx(25);
-        float x_StartLine = (float) (center_x + radius * cos(toRadians(a)));
-        float y_StartLine = (float) (center_y + radius * sin(toRadians(a)));
-        int[] colors = {ORGANIC_BLUE, ORGANIC_PINK};
-        float[] positions = {45 * 0.0036f, 1 - (45 * 0.0036f)};
-        SweepGradient sweepGradient = new SweepGradient(center_x, center_y, colors, positions);
-        Matrix matrix = new Matrix();
-        matrix.setRotate(90, center_x, center_y);
-        sweepGradient.setLocalMatrix(matrix);
-        mProgressPanel.setShader(sweepGradient);
-        mProgressPoint.setColor((int) new ArgbEvaluator().evaluate(mMaxValue / 100, ORGANIC_BLUE, ORGANIC_PINK));
         canvas.drawArc(oval, 0, 360, false, mBg);
-        canvas.drawLine(x_point, y_point, x_StartLine, y_StartLine, mProgressPointBoardLine);
+        canvas.drawLine(xPointProgress, yPointProgress, xBlackLine, yBlackLine, mProgressPointBoardLine);
         canvas.drawArc(ovalProgress, 135, 270, false, mProgressPanel);
-        canvas.drawCircle(x_point, y_point, dpToPx(10), mProgressPoint);
-        canvas.drawCircle(x_point, y_point, dpToPx(10), mProgressPointBoard);
-
+        canvas.drawCircle(xPointProgress, yPointProgress, dpToPx(10), mProgressPoint);
+        canvas.drawCircle(xPointProgress, yPointProgress, dpToPx(10), mProgressPointBoard);
         super.onDraw(canvas);
     }
 
@@ -158,10 +137,36 @@ public class Gauge extends View implements IProtocol {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         center_x = MeasureSpec.getSize(widthMeasureSpec) / 2;
         center_y = MeasureSpec.getSize(heightMeasureSpec) / 2;
+        mRadius = center_x - dpToPx(10);
+        initView();
+        recount();
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
-    public static int dpToPx(int dp) {
+    private void recount() {
+        mCorner = (float) (2.7 * mCurrentValue) + 135;
+        mProgressPoint.setColor((int) new ArgbEvaluator().evaluate(mCurrentValue / 100, ORGANIC_BLUE, ORGANIC_PINK));
+        xPointProgress = (float) (center_x + mRadiusOvalProgress * cos(toRadians(mCorner)));
+        yPointProgress = (float) (center_y + mRadiusOvalProgress * sin(toRadians(mCorner)));
+        xBlackLine = (float) (center_x + mRadiusBlackLine * cos(toRadians(mCorner)));
+        yBlackLine = (float) (center_y + mRadiusBlackLine * sin(toRadians(mCorner)));
+    }
+
+    private void initView() {
+        oval.set(center_x - mRadius, center_y - mRadius, center_x + mRadius, center_y + mRadius);
+        mRadiusOvalProgress = mRadius - dpToPx(10);
+        ovalProgress.set(center_x - mRadiusOvalProgress, center_y - mRadiusOvalProgress, center_x + mRadiusOvalProgress, center_y + mRadiusOvalProgress);
+        mRadiusBlackLine = mRadius - dpToPx(35);
+        int[] colors = {ORGANIC_BLUE, ORGANIC_PINK};
+        float[] positions = {45 * 0.0036f, 1 - (45 * 0.0036f)};
+        SweepGradient sweepGradient = new SweepGradient(center_x, center_y, colors, positions);
+        Matrix matrix = new Matrix();
+        matrix.setRotate(90, center_x, center_y);
+        sweepGradient.setLocalMatrix(matrix);
+        mProgressPanel.setShader(sweepGradient);
+    }
+
+    private static int dpToPx(int dp) {
         return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
     }
 }
