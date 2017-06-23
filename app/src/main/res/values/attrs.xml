@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:app="http://schemas.android.com/apk/res/android" >
+    <attr name="myfonts" format="string"/>
+    <declare-styleable name="Gauge" >
+        <attr name="myfonts"/>
+    </declare-styleable>
+</resources>

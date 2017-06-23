@@ -1,7 +1,9 @@
 package com.software.chi.drapanddrop;
 
 
+import android.animation.ArgbEvaluator;
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -26,6 +28,7 @@ public class Gauge extends View implements IProtocol {
     private Paint mProgressPoint;
     private Paint mProgressPointBoard;
     private Paint mProgressPointBoardLine;
+    private Context mContext;
 
     private float mMaxValue;
 
@@ -36,18 +39,24 @@ public class Gauge extends View implements IProtocol {
     private RectF oval = new RectF();
     private RectF ovalProgress = new RectF();
 
+    private int ORGANIC_BLUE = 0xFF6045EC;
+    private int ORGANIC_PINK = 0xFFFF5471;
+
     public Gauge(Context context) {
         super(context);
+        this.mContext = context;
         init();
     }
 
     public Gauge(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
+        this.mContext = context;
         init();
     }
 
     public Gauge(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        this.mContext = context;
         init();
     }
 
@@ -66,7 +75,8 @@ public class Gauge extends View implements IProtocol {
         mProgressPointBoard.setStrokeWidth(8);
         mProgressPointBoard.setStyle(Paint.Style.STROKE);
         mProgressPointBoard.setAntiAlias(true);
-        mProgressPointBoard.setShadowLayer(5, 0, 0, 0x55000000);
+        int transparentBlack = 0x55000000;
+        mProgressPointBoard.setShadowLayer(5, 0, 0, transparentBlack);
     }
 
     private void initLineProgress() {
@@ -90,7 +100,8 @@ public class Gauge extends View implements IProtocol {
         mBg.setStrokeWidth(5);
         mBg.setStyle(Paint.Style.FILL);
         mBg.setAntiAlias(true);
-        mBg.setShadowLayer(8, 0, 0, 0x65000000);
+        int transparentBlack = 0x65000000;
+        mBg.setShadowLayer(8, 0, 0, transparentBlack);
     }
 
     private void initProgressPanel() {
@@ -110,41 +121,47 @@ public class Gauge extends View implements IProtocol {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        radius = getWidth() / 2 - 25;
+        if (canvas.getWidth() <= 0) {
+            return;
+        }
+        radius = center_x - dpToPx(10);
 
         oval.set(center_x - radius, center_y - radius, center_x + radius, center_y + radius);
-        radius -= 20;
+        radius -= dpToPx(10);
         ovalProgress.set(center_x - radius, center_y - radius, center_x + radius, center_y + radius);
 
         float a = (float) (2.7 * mMaxValue) + 135;
         float x_point = (float) (center_x + radius * cos(toRadians(a)));
         float y_point = (float) (center_y + radius * sin(toRadians(a)));
 
-        radius -= 60;
+        radius -= dpToPx(25);
         float x_StartLine = (float) (center_x + radius * cos(toRadians(a)));
         float y_StartLine = (float) (center_y + radius * sin(toRadians(a)));
-        int[] colors = {0xFF6045EC, 0xFFFF5471};
-        float[] positions = {2, 360};
+        int[] colors = {ORGANIC_BLUE, ORGANIC_PINK};
+        float[] positions = {45 * 0.0036f, 1 - (45 * 0.0036f)};
         SweepGradient sweepGradient = new SweepGradient(center_x, center_y, colors, positions);
         Matrix matrix = new Matrix();
         matrix.setRotate(90, center_x, center_y);
         sweepGradient.setLocalMatrix(matrix);
         mProgressPanel.setShader(sweepGradient);
-        mProgressPoint.setShader(sweepGradient);
-        mBg.setShader(sweepGradient);
+        mProgressPoint.setColor((int) new ArgbEvaluator().evaluate(mMaxValue / 100, ORGANIC_BLUE, ORGANIC_PINK));
         canvas.drawArc(oval, 0, 360, false, mBg);
         canvas.drawLine(x_point, y_point, x_StartLine, y_StartLine, mProgressPointBoardLine);
         canvas.drawArc(ovalProgress, 135, 270, false, mProgressPanel);
-        canvas.drawCircle(x_point, y_point, 20, mProgressPoint);
-        canvas.drawCircle(x_point, y_point, 20, mProgressPointBoard);
+        canvas.drawCircle(x_point, y_point, dpToPx(10), mProgressPoint);
+        canvas.drawCircle(x_point, y_point, dpToPx(10), mProgressPointBoard);
 
         super.onDraw(canvas);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        center_y = getWidth() / 2;
-        center_x = getHeight() / 2;
+        center_x = MeasureSpec.getSize(widthMeasureSpec) / 2;
+        center_y = MeasureSpec.getSize(heightMeasureSpec) / 2;
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
+    public static int dpToPx(int dp) {
+        return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
     }
 }
